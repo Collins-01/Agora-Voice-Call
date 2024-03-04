@@ -16,18 +16,18 @@ abstract class IAgoraService {
 
   // **********************************[ EVENTS ] *****************************************
   /// emits and `incoming call` event to the socket server, passing the necessary information.
-  Future<void> emitIncomigCall(Map<String, dynamic> data);
+  void emitIncomigCall(Map<String, dynamic> data);
 
   /// A method that allows the current user to reject a call.
-  Future<void> emitRejectCall(String userId);
+  void emitRejectCall(String userId);
 
   /// A method that allows a user to send the `mute` status of the call.
-  Future<void> emitCallMuteStatus(Map<String, dynamic> data);
+  void emitCallMuteStatus(Map<String, dynamic> data);
 
   /// Emits an event to the caller to indicate that the receiver is currently on another call.
   Future<void> emitUserOnAnotherCall(Map<String, dynamic> data);
 
   //*************************************[METHODS]************************************************* */d for
   /// Takes in the channel name as an argument, and returns a token from the server that will be used for the call. It can be null when no token is returned, or there is an error.
-  Future<String> getToken(String channel);
+  Future<String?> getToken(String channel);
 }

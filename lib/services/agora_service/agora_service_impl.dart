@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:agora_voice_call/services/agora_service/agora_service_interface.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart';
 
 // ignore: constant_identifier_names
@@ -28,12 +31,17 @@ extension SocketConnectionStatusExtension on SocketConnectionStatus {
 
 class AgoraServiceImpl extends IAgoraService {
   late Socket _socket;
+  final _incomingCallEvent = 'incoming_call';
+  final _rejectCallEvent = 'reject_call';
+  final _muteCallStatusEvent = 'mute_call';
   final ValueNotifier<SocketConnectionStatus> _connectionStatus =
       ValueNotifier(SocketConnectionStatus.Disconnected);
   @override
-  Future<void> emitIncomigCall(Map<String, dynamic> data) async {
-    // TODO: implement emitIncomigCall
-    throw UnimplementedError();
+  void emitIncomigCall(Map<String, dynamic> data) async {
+    log("$_incomingCallEvent ==> $data");
+
+    /// socket emits incoming call event to the server.
+    _socket.emit(_incomingCallEvent, data);
   }
 
   @override
@@ -86,21 +94,33 @@ class AgoraServiceImpl extends IAgoraService {
   }
 
   @override
-  Future<String> getToken(String channel) {
-    // TODO: implement getToken
-    throw UnimplementedError();
+  Future<String?> getToken(String channel) async {
+    try {
+      final response =
+          await http.post(Uri.parse('$BASE_URL/get-access-token'), body: {
+        'channel': channel,
+      });
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data.containsKey('token')) {
+        return data['token'] as String;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
-  Future<void> emitCallMuteStatus(Map<String, dynamic> data) {
-    // TODO: implement emitCallMuteStatus
-    throw UnimplementedError();
+  void emitCallMuteStatus(Map<String, dynamic> data) {
+    _socket.emit(_muteCallStatusEvent, data);
   }
 
   @override
-  Future<void> emitRejectCall(String userId) {
-    // TODO: implement emitRejectCall
-    throw UnimplementedError();
+  void emitRejectCall(String userId) {
+    _socket.emit(_rejectCallEvent, {
+      'user_id': userId,
+    });
   }
 
   @override
@@ -133,3 +153,7 @@ class AgoraServiceImpl extends IAgoraService {
     throw UnimplementedError();
   }
 }
+
+final agoraServiceProvider = Provider<IAgoraService>((ref) {
+  return AgoraServiceImpl();
+});
